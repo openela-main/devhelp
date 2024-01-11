@@ -1,0 +1,108 @@
+diff --git a/src/dh-book-tree.c b/src/dh-book-tree.c
+index e97fe283..7d8f2395 100644
+--- a/src/dh-book-tree.c
++++ b/src/dh-book-tree.c
+@@ -177,7 +177,7 @@ book_tree_find_language_group (DhBookTree  *tree,
+                         g_return_if_reached ();
+                 }
+ 
+-                if (exact_iter != NULL &&
++                if (exact_iter != NULL && exact_found &&
+                     g_ascii_strcasecmp (title, language) == 0) {
+                         /* Exact match found! */
+                         *exact_iter = loop_iter;
+@@ -187,7 +187,7 @@ book_tree_find_language_group (DhBookTree  *tree,
+                                 g_free (title);
+                                 return;
+                         }
+-                } else if (next_iter != NULL &&
++                } else if (next_iter != NULL && next_found &&
+                            g_ascii_strcasecmp (title, language) > 0) {
+                         *next_iter = loop_iter;
+                         *next_found = TRUE;
+@@ -252,7 +252,7 @@ book_tree_find_book (DhBookTree        *tree,
+ 
+                 /* We can compare pointers directly as we're playing with references
+                  * of the same object */
+-                if (exact_iter != NULL &&
++                if (exact_iter != NULL && exact_found &&
+                     in_tree_book == book) {
+                         *exact_iter = loop_iter;
+                         *exact_found = TRUE;
+diff --git a/src/dh-keyword-model.c b/src/dh-keyword-model.c
+index a0b716f4..6a7fc50d 100644
+--- a/src/dh-keyword-model.c
++++ b/src/dh-keyword-model.c
+@@ -442,6 +442,14 @@ search_single_book (DhBook          *book,
+         return ret;
+ }
+ 
++static gint
++compare_links (gconstpointer a,
++               gconstpointer b,
++               gpointer user_data)
++{
++        return dh_link_compare (a, b);
++}
++
+ static GQueue *
+ search_books (SearchSettings  *settings,
+               guint            max_hits,
+@@ -486,7 +494,7 @@ search_books (SearchSettings  *settings,
+                 dh_util_queue_concat (ret, book_result);
+         }
+ 
+-        g_queue_sort (ret, (GCompareDataFunc) dh_link_compare, NULL);
++        g_queue_sort (ret, (GCompareDataFunc) compare_links, NULL);
+         return ret;
+ }
+ 
+diff --git a/src/dh-preferences.c b/src/dh-preferences.c
+index 0568c505..ffae33b3 100644
+--- a/src/dh-preferences.c
++++ b/src/dh-preferences.c
+@@ -143,7 +143,7 @@ preferences_bookshelf_find_book (DhPreferences     *prefs,
+                                     -1);
+ 
+                 /* We may have reached the start of the next language group here */
+-                if (first && !in_list_book) {
++                if (exact_found && first && !in_list_book) {
+                         *next_iter = loop_iter;
+                         *next_found = TRUE;
+                         return;
+@@ -151,7 +151,7 @@ preferences_bookshelf_find_book (DhPreferences     *prefs,
+ 
+                 /* We can compare pointers directly as we're playing with references
+                  * of the same object */
+-                if (exact_iter &&
++                if (exact_iter && exact_found &&
+                     in_list_book == book) {
+                         *exact_iter = loop_iter;
+                         *exact_found = TRUE;
+@@ -160,7 +160,7 @@ preferences_bookshelf_find_book (DhPreferences     *prefs,
+                                 g_object_unref (in_list_book);
+                                 return;
+                         }
+-                } else if (next_iter &&
++                } else if (next_iter && next_found &&
+                            dh_book_cmp_by_title (in_list_book, book) > 0) {
+                         *next_iter = loop_iter;
+                         *next_found = TRUE;
+@@ -223,7 +223,7 @@ preferences_bookshelf_find_language_group (DhPreferences *prefs,
+                         continue;
+                 }
+ 
+-                if (exact_iter &&
++                if (exact_iter && exact_found &&
+                     g_ascii_strcasecmp (title, language) == 0) {
+                         /* Exact match found! */
+                         *exact_iter = loop_iter;
+@@ -233,7 +233,7 @@ preferences_bookshelf_find_language_group (DhPreferences *prefs,
+                                 g_free (title);
+                                 return;
+                         }
+-                } else if (next_iter &&
++                } else if (next_iter && next_found &&
+                            g_ascii_strcasecmp (title, language) > 0) {
+                         *next_iter = loop_iter;
+                         *next_found = TRUE;
